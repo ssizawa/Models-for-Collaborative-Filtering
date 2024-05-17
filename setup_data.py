@@ -211,10 +211,10 @@ def load_tr_te_data(csv_file_tr, csv_file_te):
 
 def process_unzipped_data(DATA_DIR,
                           force_overwrite=False,
-                          n_heldout_users=10000,
-                          discard_ratings_below=3.5,
+                          n_heldout_users=3000,
+                          discard_ratings_below=0,
                           min_users_per_item_to_include=0,
-                          min_clicks_per_user_to_include=5):
+                          min_clicks_per_user_to_include=0):
 
     pro_dir = os.path.join(DATA_DIR, 'pro_sg')
     if os.path.isdir(pro_dir):
@@ -224,7 +224,7 @@ def process_unzipped_data(DATA_DIR,
         else:
             print("pro_sg dir already exists. Exiting.")
             return
-    raw_data = pd.read_csv(os.path.join(DATA_DIR, 'ratings.csv'), header=0)
+    raw_data = pd.read_csv(os.path.join(DATA_DIR, 'amazon_ratings_v2.csv'), header=0)
 
 
     # In[4]:
@@ -255,8 +255,8 @@ def process_unzipped_data(DATA_DIR,
     def filter_triplets(tp, min_uc=5, min_sc=0):
         # Only keep the triplets for items which were clicked on by at least min_sc users.
         if min_sc > 0:
-            itemcount = get_count(tp, 'movieId')
-            tp = tp[tp['movieId'].isin(itemcount.index[itemcount['size'] >= min_sc])]
+            itemcount = get_count(tp, 'itemId')
+            tp = tp[tp['itemId'].isin(itemcount.index[itemcount['size'] >= min_sc])]
 
         # Only keep the triplets for users who clicked on at least min_uc items
         # After doing this, some of the items will have less than min_uc users, but should only be a small proportion
@@ -265,7 +265,7 @@ def process_unzipped_data(DATA_DIR,
             tp = tp[tp['userId'].isin(usercount.index[usercount['size'] >= min_uc])]
 
         # Update both usercount and itemcount after filtering
-        usercount, itemcount = get_count(tp, 'userId'), get_count(tp, 'movieId')
+        usercount, itemcount = get_count(tp, 'userId'), get_count(tp, 'itemId')
         return tp, usercount, itemcount
 
 
@@ -320,7 +320,7 @@ def process_unzipped_data(DATA_DIR,
     # In[13]:
 
 
-    unique_sid = pd.unique(train_plays['movieId'])
+    unique_sid = pd.unique(train_plays['itemId'])
 
 
     # In[14]:
@@ -377,7 +377,7 @@ def process_unzipped_data(DATA_DIR,
 
 
     vad_plays = raw_data.loc[raw_data['userId'].isin(vd_users)]
-    vad_plays = vad_plays.loc[vad_plays['movieId'].isin(unique_sid)]
+    vad_plays = vad_plays.loc[vad_plays['itemId'].isin(unique_sid)]
 
 
     # In[18]:
@@ -390,7 +390,7 @@ def process_unzipped_data(DATA_DIR,
 
 
     test_plays = raw_data.loc[raw_data['userId'].isin(te_users)]
-    test_plays = test_plays.loc[test_plays['movieId'].isin(unique_sid)]
+    test_plays = test_plays.loc[test_plays['itemId'].isin(unique_sid)]
 
 
     # In[20]:
@@ -406,7 +406,7 @@ def process_unzipped_data(DATA_DIR,
 
     def numerize(tp):
         uid = map(lambda x: profile2id[x], tp['userId'])
-        sid = map(lambda x: show2id[x], tp['movieId'])
+        sid = map(lambda x: show2id[x], tp['itemId'])
         return pd.DataFrame(data={'uid': list(uid), 'sid': list(sid)}, columns=['uid', 'sid'])
 
 
@@ -449,34 +449,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # parser.add_argument("--use-noise-morpher", help="Whether to use noise-morphing or not. Defaults to True.", type=lambda x:bool(distutils.util.strtobool(x)), default=defaults["use_noise_morpher"])
     parser.add_argument("--force-overwrite", help="Re-download, extract, and parse data", type=lambda x:bool(distutils.util.strtobool(x)), default=False)
-    parser.add_argument("--dataset", help="Which dataset do you want?", type=str, default='ml-20m')
+    parser.add_argument("--dataset", help="Which dataset do you want?", type=str, default='amazon')
     args = parser.parse_args()
 
     force_overwrite = args.force_overwrite
     dataset = args.dataset
-    assert dataset in ['ml-20m', 'netflix-prize', 'msd', 'all']
+    assert dataset in ['amazon']
 
-    if dataset == 'ml-20m' or dataset == 'all':
-        print("Doing ml-20m stuff!")
-        maybe_download_and_extract_movie_data("./data", force_overwrite=force_overwrite)
-        process_unzipped_data('./data/ml-20m', force_overwrite=force_overwrite)
-
-    if dataset == 'netflix-prize' or dataset == 'all':
-        print("Doing netflix-prize stuff!")
-        maybe_download_and_extract_netflix_data('./data', force_overwrite=force_overwrite)
-        munge_netflix_data('./data', force_overwrite=force_overwrite)
-        process_unzipped_data('./data/netflix-prize', force_overwrite=force_overwrite, n_heldout_users=40000)
-
-    if dataset == 'msd' or dataset == 'all':
-        maybe_download_and_extract_msd('./data', force_overwrite=force_overwrite)
-        munge_msd('./data', force_overwrite=force_overwrite)
-        process_unzipped_data(
-            './data/msd',
-            force_overwrite=force_overwrite,
-            n_heldout_users=50000,
-            discard_ratings_below=0.0,
-            min_users_per_item_to_include=200,
-            min_clicks_per_user_to_include=20)
+    if dataset == 'amazon' or dataset == 'all':
+        print("Doing amazon stuff!")
+        process_unzipped_data('./data/amazon', force_overwrite=force_overwrite)
 
     print("All done!")
     exit()
