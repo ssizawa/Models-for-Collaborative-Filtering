@@ -8,7 +8,7 @@
 
     `python setup_data.py --dataset=DATASET_OF_CHOICE`
 
-Default is *ml-20m*, which is the smallest dataset. Other options are `amazon`, which is my original furniture review data from amazon review data.
+Default is *ml-20m*. Other options are `amazon`, which is my original furniture review data from amazon review data.
 
 ## Main Scripts
 
