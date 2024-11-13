@@ -8,7 +8,7 @@ from training import train, test
 if __name__ == '__main__':
 
     BREAK_EARLY = False
-    BATCH_SIZE = 400
+    BATCH_SIZE = 600
 
     actor_path = "PROPER_MULTI_DAE_ACTOR"
     train(
